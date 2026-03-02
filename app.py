@@ -5,7 +5,6 @@ import xgboost
 
 st.set_page_config(page_title="News Credibility AI", layout="wide")
 
-# Load artifacts
 @st.cache_resource
 def load_data():
     try:
@@ -17,50 +16,45 @@ def load_data():
 
 model, training_accuracy = load_data()
 
-# Sidebar for the "Sir/Professor" View
-st.sidebar.header("📊 Model Evaluation")
+# Sidebar
+st.sidebar.header("📊 Model Metrics")
 if training_accuracy:
-    st.sidebar.metric("System Accuracy", f"{training_accuracy:.2%}")
-    st.sidebar.write("**Model:** XGBoost Classifier")
-    st.sidebar.write("**Feature Engine:** TF-IDF Vectorizer")
-    st.sidebar.info("This model analyzes linguistic patterns to determine credibility.")
-else:
-    st.sidebar.warning("Upload model files to GitHub to see metrics.")
+    st.sidebar.metric("Training Accuracy", f"{training_accuracy:.2%}")
 
-st.title("🛡️ Intelligent News Credibility Analysis")
-st.markdown("---")
+st.title("🛡️ News Credibility Analyzer")
 
-# User Input
-input_text = st.text_area("Analyze news content or a statement:", height=150, 
-                          placeholder="e.g., Is Udit the PM of India?")
+# Placeholder update: More professional/realistic news example
+placeholder_text = (
+    "Example: The global economy is expected to grow by 3% in 2024 according to "
+    "recent financial reports issued by the International Monetary Fund."
+)
 
-if st.button("Analyze Credibility"):
-    if not model:
-        st.error("Model files not found on server.")
-    elif not input_text.strip():
-        st.warning("Please enter some text.")
-    else:
-        # Prediction
-        pred = model.predict([input_text])[0]
-        probs = model.predict_proba([input_text])[0]
-        confidence = probs[1] if pred == 1 else probs[0]
+user_input = st.text_area("Analyze news content:", height=150, placeholder=placeholder_text)
+
+if st.button("Analyze"):
+    if model and user_input.strip():
+        # Get prediction and probabilities
+        pred = model.predict([user_input])[0]
+        probs = model.predict_proba([user_input])[0]
         
-        # UI Display
+        # FIX: Explicitly cast to float for st.progress
+        confidence = float(probs[1] if pred == 1 else probs[0])
+        
         col1, col2 = st.columns(2)
         with col1:
             if pred == 1:
-                st.success("### ✅ High Credibility Pattern")
-                st.write("The text structure matches reliable news sources.")
+                st.success("### ✅ High Credibility")
             else:
-                st.error("### 🚨 Low Credibility Signal")
-                st.write("Warning: This text matches patterns often found in misinformation.")
+                st.error("### 🚨 Low Credibility")
         
         with col2:
-            st.metric("Model Confidence", f"{confidence:.2%}")
-            st.progress(confidence)
-
-        # Techie explanation for the PM question
-        if "udit" in input_text.lower():
-            st.info("**Note for User:** Milestone 1 detects *how* something is written. "
-                    "Since this sentence is grammatically clean, the model sees it as 'Real Style'. "
-                    "Fact-checking (Milestone 2) will verify the actual names.")
+            st.metric("Confidence", f"{confidence:.2%}")
+            # This line was crashing; it is now safe with float()
+            st.progress(confidence) 
+            
+        # Techie disclaimer for the 'Udit' test
+        if "udit" in user_input.lower():
+            st.info("💡 **Developer Note:** Milestone 1 analyzes style/syntax. "
+                    "Fact-checking (Milestone 2) will verify specific names.")
+    else:
+        st.error("Check model files or input text.")
